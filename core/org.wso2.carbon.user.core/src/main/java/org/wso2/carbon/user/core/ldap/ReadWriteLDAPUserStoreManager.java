@@ -247,7 +247,7 @@ public class ReadWriteLDAPUserStoreManager extends ReadOnlyLDAPUserStoreManager 
 
             NameParser ldapParser = dirContext.getNameParser("");
             Name compoundName = ldapParser.parse(realmConfig
-                    .getUserStoreProperty(LDAPConstants.USER_NAME_ATTRIBUTE) + "=" + userName);
+					.getUserStoreProperty(LDAPConstants.USER_NAME_ATTRIBUTE) + "=" + replaceEscapeCharacters(userName, true));
 
             if (log.isDebugEnabled()) {
                 log.debug("Binding user: " + compoundName);
@@ -472,7 +472,7 @@ public class ReadWriteLDAPUserStoreManager extends ReadOnlyLDAPUserStoreManager 
                 .getUserStoreProperty(LDAPConstants.USER_NAME_ATTRIBUTE);
         String searchFilter = realmConfig
                 .getUserStoreProperty(LDAPConstants.USER_NAME_SEARCH_FILTER);
-        searchFilter = searchFilter.replace("?", userName);
+		searchFilter = searchFilter.replace("?", escapeLDAPSearchFilter(userName));
         String[] returningUserAttributes = new String[]{userNameAttribute};
 
         DirContext mainDirContext = this.connectionSource.getContext();
@@ -550,7 +550,7 @@ public class ReadWriteLDAPUserStoreManager extends ReadOnlyLDAPUserStoreManager 
                 subDirContext = (DirContext) mainDirContext.lookup(userSearchBase);
                 subDirContext.destroySubcontext(userDN);
             }
-            userCache.remove(userName);
+            userCache.remove(replaceEscapeCharacters(userName, false));
         } catch (NamingException e) {
             String errorMessage = "Error occurred while deleting the user. ";
             throw new UserStoreException(errorMessage, e);
@@ -576,7 +576,7 @@ public class ReadWriteLDAPUserStoreManager extends ReadOnlyLDAPUserStoreManager 
         // first search the existing user entry.
         String searchBase = realmConfig.getUserStoreProperty(LDAPConstants.USER_SEARCH_BASE);
         String searchFilter = realmConfig.getUserStoreProperty(LDAPConstants.USER_NAME_SEARCH_FILTER);
-        searchFilter = searchFilter.replace("?", userName);
+		searchFilter = searchFilter.replace("?", escapeLDAPSearchFilter(userName));
 
         SearchControls searchControls = new SearchControls();
         searchControls.setSearchScope(SearchControls.SUBTREE_SCOPE);
@@ -638,7 +638,7 @@ public class ReadWriteLDAPUserStoreManager extends ReadOnlyLDAPUserStoreManager 
         String searchBase = realmConfig.getUserStoreProperty(LDAPConstants.USER_SEARCH_BASE);
         String searchFilter = realmConfig
                 .getUserStoreProperty(LDAPConstants.USER_NAME_SEARCH_FILTER);
-        searchFilter = searchFilter.replace("?", userName);
+        searchFilter = searchFilter.replace("?", escapeLDAPSearchFilter(userName));
 
         SearchControls searchControls = new SearchControls();
         searchControls.setSearchScope(SearchControls.SUBTREE_SCOPE);
@@ -783,7 +783,7 @@ public class ReadWriteLDAPUserStoreManager extends ReadOnlyLDAPUserStoreManager 
         if (userNames.length > 1) {
             userName = userNames[1];
         }
-        userSearchFilter = userSearchFilter.replace("?", userName);
+		userSearchFilter = userSearchFilter.replace("?", escapeLDAPSearchFilter(userName));
 
         SearchControls searchControls = new SearchControls();
         searchControls.setSearchScope(SearchControls.SUBTREE_SCOPE);
@@ -912,7 +912,7 @@ public class ReadWriteLDAPUserStoreManager extends ReadOnlyLDAPUserStoreManager 
         if (userNames.length > 1) {
             userName = userNames[1];
         }
-        userSearchFilter = userSearchFilter.replace("?", userName);
+        userSearchFilter = userSearchFilter.replace("?", escapeLDAPSearchFilter(userName));
 
         SearchControls searchControls = new SearchControls();
         searchControls.setSearchScope(SearchControls.SUBTREE_SCOPE);
@@ -1006,7 +1006,7 @@ public class ReadWriteLDAPUserStoreManager extends ReadOnlyLDAPUserStoreManager 
         String userSearchBase = realmConfig.getUserStoreProperty(LDAPConstants.USER_SEARCH_BASE);
         String userSearchFilter = realmConfig
                 .getUserStoreProperty(LDAPConstants.USER_NAME_SEARCH_FILTER);
-        userSearchFilter = userSearchFilter.replace("?", userName);
+        userSearchFilter = userSearchFilter.replace("?", escapeLDAPSearchFilter(userName));
 
         SearchControls searchControls = new SearchControls();
         searchControls.setSearchScope(SearchControls.SUBTREE_SCOPE);
@@ -1080,7 +1080,7 @@ public class ReadWriteLDAPUserStoreManager extends ReadOnlyLDAPUserStoreManager 
         String userSearchBase = realmConfig.getUserStoreProperty(LDAPConstants.USER_SEARCH_BASE);
         String userSearchFilter = realmConfig
                 .getUserStoreProperty(LDAPConstants.USER_NAME_SEARCH_FILTER);
-        userSearchFilter = userSearchFilter.replace("?", userName);
+        userSearchFilter = userSearchFilter.replace("?", escapeLDAPSearchFilter(userName));
 
         SearchControls searchControls = new SearchControls();
         searchControls.setSearchScope(SearchControls.SUBTREE_SCOPE);
@@ -1216,7 +1216,7 @@ public class ReadWriteLDAPUserStoreManager extends ReadOnlyLDAPUserStoreManager 
                         // search the user in user search base
                         String searchFilter = realmConfig
                                 .getUserStoreProperty(LDAPConstants.USER_NAME_SEARCH_FILTER);
-                        searchFilter = searchFilter.replace("?", userName);
+                        searchFilter = searchFilter.replace("?", escapeLDAPSearchFilter(userName));
                         results = searchInUserBase(searchFilter, new String[]{},
                                 SearchControls.SUBTREE_SCOPE, mainDirContext);
                         // we assume only one user with the given user

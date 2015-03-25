@@ -304,7 +304,7 @@ public class ReadOnlyLDAPUserStoreManager extends AbstractUserStoreManager {
         userName = userName.trim();
         // if replace escape characters enabled, modify username by replacing
         // escape characters.
-        userName = replaceEscapeCharacters(userName);
+        userName = replaceEscapeCharacters(userName, true);
         String password = (String) credential;
         password = password.trim();
 
@@ -416,7 +416,8 @@ public class ReadOnlyLDAPUserStoreManager extends AbstractUserStoreManager {
     public Map<String, String> getUserPropertyValues(String userName, String[] propertyNames,
                                                      String profileName) throws UserStoreException {
 
-        String userDN = userCache.get(userName);
+        //String userDN = userCache.get(userName);
+        String userDN = userCache.get(replaceEscapeCharacters(userName, false));
 
         if (userDN == null) {
             // read list of patterns from user-mgt.xml
@@ -431,7 +432,7 @@ public class ReadOnlyLDAPUserStoreManager extends AbstractUserStoreManager {
                 if (patterns.contains("#")) {
                     userDN = getNameInSpaceForUserName(userName);
                 } else {
-                    userDN = MessageFormat.format(patterns, userName);
+                    userDN = MessageFormat.format(patterns, replaceEscapeCharacters(userName, false));
                 }
             }
         }
@@ -445,7 +446,7 @@ public class ReadOnlyLDAPUserStoreManager extends AbstractUserStoreManager {
 
         DirContext dirContext = this.connectionSource.getContext();
         String userSearchFilter = realmConfig.getUserStoreProperty(LDAPConstants.USER_NAME_SEARCH_FILTER);
-        String searchFilter = userSearchFilter.replace("?", userName);
+        String searchFilter = userSearchFilter.replace("?", escapeLDAPSearchFilter(userName));
 
         NamingEnumeration<?> answer = null;
         NamingEnumeration<?> attrs = null;
@@ -623,15 +624,16 @@ public class ReadOnlyLDAPUserStoreManager extends AbstractUserStoreManager {
         }
         boolean bFound = false;
         String userSearchFilter = realmConfig.getUserStoreProperty(LDAPConstants.USER_NAME_SEARCH_FILTER);
-        userSearchFilter = userSearchFilter.replace("?", userName);
+        userSearchFilter = userSearchFilter.replace("?", escapeLDAPSearchFilter(userName));
         try {
             String searchBase = null;
-            String userDN = userCache.get(userName);
+            String userDN = userCache.get(replaceEscapeCharacters(userName, false));
             if(userDN == null){
                 String userDNPattern = realmConfig.getUserStoreProperty(LDAPConstants.USER_DN_PATTERN);
                 if (userDNPattern != null && userDNPattern.trim().length() > 0) {
                     String[] patterns = userDNPattern.split("#");
                     for (String pattern : patterns) {
+                        userName = replaceEscapeCharacters(userName, false);
                         searchBase = MessageFormat.format(pattern, userName);
                         userDN = getNameInSpaceForUserName(userName, searchBase, userSearchFilter);
                         if (userDN != null && userDN.length() > 0) {
@@ -854,7 +856,7 @@ public class ReadOnlyLDAPUserStoreManager extends AbstractUserStoreManager {
                 for (String userName : userNames) {
                     String searchFilter =
                             "(&" + userNameListFilter + "(" + userNameAttribute +
-                                    "=" + userName + "))";
+					                              "=" + escapeLDAPSearchFilter(userName) + "))";
                     List<String> displayNames =
                             this.getListOfNames(userSearchBase, searchFilter,
                                     searchControls,
@@ -1605,7 +1607,7 @@ public class ReadOnlyLDAPUserStoreManager extends AbstractUserStoreManager {
                 String userNameProperty =
                         realmConfig.getUserStoreProperty(LDAPConstants.USER_NAME_ATTRIBUTE);
                 String userSearchFilter = realmConfig.getUserStoreProperty(LDAPConstants.USER_NAME_SEARCH_FILTER);
-                String searchFilter = userSearchFilter.replace("?", userName);
+                		String searchFilter = userSearchFilter.replace("?", escapeLDAPSearchFilter(userName));
 
                 String binaryAttribute =
                         realmConfig.getUserStoreProperty(LDAPConstants.LDAP_ATTRIBUTES_BINARY);
@@ -1681,7 +1683,7 @@ public class ReadOnlyLDAPUserStoreManager extends AbstractUserStoreManager {
                 String userDNPattern = realmConfig.getUserStoreProperty(LDAPConstants.USER_DN_PATTERN);
                 String nameInSpace;
                 if (userDNPattern != null && !userDNPattern.contains("#")) {
-                    nameInSpace = MessageFormat.format(userDNPattern, userName);
+                    nameInSpace = MessageFormat.format(userDNPattern, escapeLDAPSearchFilter(userName));
                 } else {
                     nameInSpace = this.getNameInSpaceForUserName(userName);
                 }
@@ -1762,18 +1764,19 @@ public class ReadOnlyLDAPUserStoreManager extends AbstractUserStoreManager {
      */
     protected String getNameInSpaceForUserName(String userName) throws UserStoreException {
         // check the cache first
-        String name = userCache.get(userName);
+        String name = userCache.get(replaceEscapeCharacters(userName, false));
         if (name != null) {
             return name;
         }
 
         String searchBase = null;
         String userSearchFilter = realmConfig.getUserStoreProperty(LDAPConstants.USER_NAME_SEARCH_FILTER);
-        userSearchFilter = userSearchFilter.replace("?", userName);
+        userSearchFilter = userSearchFilter.replace("?", escapeLDAPSearchFilter(userName));
         String userDNPattern = realmConfig.getUserStoreProperty(LDAPConstants.USER_DN_PATTERN);
         if (userDNPattern != null && userDNPattern.trim().length() > 0) {
             String[] patterns = userDNPattern.split("#");
             for (String pattern : patterns) {
+                userName = replaceEscapeCharacters(userName, false);
                 searchBase = MessageFormat.format(pattern, userName);
                 String userDN = getNameInSpaceForUserName(userName, searchBase, userSearchFilter);
                 // check in another DN pattern
@@ -1821,7 +1824,8 @@ public class ReadOnlyLDAPUserStoreManager extends AbstractUserStoreManager {
                 if (answer.hasMore()) {
                     userObj = (SearchResult) answer.next();
                     if (userObj != null) {
-                        userDN = userObj.getNameInNamespace();
+                        userDN = base;
+                        //userDN = userObj.getNameInNamespace();
                         break;
                     }
                 }
@@ -2170,7 +2174,7 @@ public class ReadOnlyLDAPUserStoreManager extends AbstractUserStoreManager {
 
             String userNameProperty = realmConfig.getUserStoreProperty(LDAPConstants.USER_NAME_ATTRIBUTE);
             String userSearchFilter = realmConfig.getUserStoreProperty(LDAPConstants.USER_NAME_SEARCH_FILTER);
-            String searchFilter = userSearchFilter.replace("?", userName);
+            String searchFilter = userSearchFilter.replace("?", escapeLDAPSearchFilter(userName));
             String binaryAttribute =
                     realmConfig.getUserStoreProperty(LDAPConstants.LDAP_ATTRIBUTES_BINARY);
             String primaryGroupId = realmConfig.getUserStoreProperty(LDAPConstants.PRIMARY_GROUP_ID);
@@ -2259,7 +2263,7 @@ public class ReadOnlyLDAPUserStoreManager extends AbstractUserStoreManager {
             String userDNPattern = realmConfig.getUserStoreProperty(LDAPConstants.USER_DN_PATTERN);
             String nameInSpace;
             if (userDNPattern != null && !userDNPattern.contains("#")) {
-                nameInSpace = MessageFormat.format(userDNPattern, userName);
+                nameInSpace = MessageFormat.format(userDNPattern, escapeLDAPSearchFilter(userName));
             } else {
                 nameInSpace = this.getNameInSpaceForUserName(userName);
             }

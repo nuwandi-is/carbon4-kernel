@@ -2978,7 +2978,7 @@ public abstract class AbstractUserStoreManager implements UserStoreManager {
      *
      * @param userName
      */
-    protected String replaceEscapeCharacters(String userName) {
+    protected String replaceEscapeCharacters(String userName, boolean isJavaEscaped) {
 
         if (log.isDebugEnabled()) {
             log.debug("Replacing escape characters in " + userName);
@@ -2994,13 +2994,77 @@ public abstract class AbstractUserStoreManager implements UserStoreManager {
                         + replaceEscapeCharactersAtUserLoginString);
             }
             if (replaceEscapeCharactersAtUserLogin) {
-                // Currently only '\' & '\\' are identified as escape characters
-                // that needs to be
-                // replaced.
-                return userName.replaceAll("\\\\", "\\\\\\\\");
+                StringBuilder sb = new StringBuilder();
+                for (int i = 0; i < userName.length(); i++) {
+                    char currentChar = userName.charAt(i);
+                    switch (currentChar) {
+                        case '\\':
+                            if (isJavaEscaped){
+                                sb.append("\\\\");
+                                break;
+                            } else {
+                                sb.append("\\\\\\");
+                                break;
+                            }
+                        case ',':
+                            sb.append("\\,");
+                            break;
+                        case '+':
+                            sb.append("\\+");
+                            break;
+                        case '"':
+                            if (isJavaEscaped) {
+                                sb.append("\\\"");
+                                break;
+                            } else {
+                                sb.append("\\\\\"");
+                                break;
+                            }
+                        case '<':
+                            sb.append("\\<");
+                            break;
+                        case '>':
+                            sb.append("\\>");
+                            break;
+                        case ';':
+                            sb.append("\\;");
+                            break;
+                        default:
+                            sb.append(currentChar);
+                    }
+                }
+                return sb.toString();
             }
         }
         return userName;
+    }
+
+    protected String escapeLDAPSearchFilter(String userName) {
+        //userName = decodeHTMLCharacters(userName);
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < userName.length(); i++) {
+            char curChar = userName.charAt(i);
+            switch (curChar) {
+                case '\\':
+                    sb.append("\\5c");
+                    break;
+                case '*':
+                    sb.append("\\2a");
+                    break;
+                case '(':
+                    sb.append("\\28");
+                    break;
+                case ')':
+                    sb.append("\\29");
+                    break;
+                case '\u0000':
+                    sb.append("\\00");
+                    break;
+                default:
+                    sb.append(curChar);
+            }
+        }
+        return sb.toString();
     }
 
     /**
